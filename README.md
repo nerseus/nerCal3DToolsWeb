@@ -1,5 +1,5 @@
-# nerCal3DTools
-Tools for working with Cal3D files
+# nerCal3DTools - Web version
+Tools for working with Cal3D files on the web.
 
 This repository contains a javascript library for working with Cal3D files in the IMVU format.
 
