@@ -10,7 +10,10 @@ This also allows loading generic Cal3D files (such as those exported by WorldViz
 If you have files in binary format (CAF, CSF, etc.) check out the C# projects for working with those file formats.
 
 # Conversion App and Tools
-The repo contains a test web app. This app allows converting Cal3D files into IMVUs format. It also has various tools for manipulating existing Cal3D files. The HTM page runs locally - no data is sent to another site. It uses Bootstrap and AngularJS.
+The repo contains a test web app. This app allows converting Cal3D files into IMVUs format. It also has various tools for manipulating existing Cal3D files. The HTM page runs locally - no data is sent to another site. It uses Bootstrap and AngularJS. Please note that you can drag-drop files onto the File List area, or you can use the Browse button.
+
+For a working example (can use as-is):
+http://nersoftware.com/IMVUConversionTool/nerImvuConversion.htm
 
 For a description on what each function does below, see the comments in the web app.
 
