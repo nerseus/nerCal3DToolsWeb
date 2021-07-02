@@ -1,0 +1,316 @@
+﻿<!--
+    nerImvuConversion.htm v1.0.0 (http://nersoftware.com/IMVUConversionTool/nerImvuConversion.htm)
+    Copyright 2021 by ner software, LLC.
+    Licensed under the MIT license.
+    This repo is hosted: https://github.com/nerseus/nerCal3DTools
+    A working example is also available here: http://nersoftware.com/IMVUConversionTool/nerImvuConversion.zip-->
+<!DOCTYPE html>
+<html lang="en" ng-app="app">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>ner Software - IMVU Cal3D Tools</title>
+
+    <!--Uses: Bootstrap, toastr, jquery, angularjs -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.9/angular.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+    <!--Uses: Custom js files -->
+    <script src="Common.js"></script>
+    <script src="Cal3D.js"></script>
+    <script src="ConversionApp.js"></script>
+    <!-- Small updates to styles to allow a "tighter" formatting -->
+    <style>
+        .btn, .input-group .form-control, .input-group {
+            padding: 4px 4px;
+        }
+
+        .form-control {
+            height: 30px;
+        }
+
+        h2, h3, h4 {
+            margin: 4px;
+        }
+
+        .panel-heading {
+            padding: 4px;
+        }
+
+        body {
+            padding: 12px;
+        }
+    </style>
+</head>
+<body ng-controller="ConversionController">
+    <h3>ner Software - IMVU Cal3D Tools (v1.0.0)</h3>
+    <ul class="nav nav-tabs">
+        <li class="active"><a href="#conversion" data-toggle="tab">Conversion</a></li>
+        <li><a href="#xmf" data-toggle="tab">XMF (Mesh)</a></li>
+        <li><a href="#xaf" data-toggle="tab">XAF (Skeletal Animation)</a></li>
+        <li><a href="#xpf" data-toggle="tab">XPF (Morph Animation)</a></li>
+    </ul>
+    <div class="tab-content">
+        <!--
+        *************************************************************************
+        **  Conversion tab
+        *************************************************************************
+        -->
+        <div class="tab-pane active" id="conversion">
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <div class="form-group" style="margin-top: 8px; margin-bottom: 8px;">
+                        <label for="conversionFile">Select one or more files to convert (xsf, xmf, xaf):</label>
+                        <br />
+                        <div class="input-group" style="padding: 0">
+                            <label class="input-group-btn">
+                                <span class="btn btn-primary">
+                                    Browse… <input type="file" multiple="" id="conversionFile" style="display: none;" ng-model="globalData.conversion.rawFiles" ng-change="actions.loadRawFiles(globalData.conversion)" onclick="this.value = null" accept=".xaf,.xsf,.xmf">
+                                </span>
+                            </label>
+                            <dropable ng-model="globalData.conversion.rawFiles" ng-change="actions.loadRawFiles(globalData.conversion)" />
+                        </div>
+                    </div>
+                    <!--
+                    *************************************************************************
+                    **  Selected files panel
+                    *************************************************************************
+                    -->
+                    <div class="panel panel-default" ng-if="globalData.conversion.files.length > 0" style="margin-top: 8px; margin-bottom: 8px;">
+                        <div class="panel-heading">
+                            <div class="pull-left"><h4>Selected file(s)</h4></div>
+                            <div class="pull-right"><button class="btn btn-link" ng-click="actions.clearFiles(globalData.conversion)">Clear List</button></div>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="panel-body">
+                            <div class="input-group" style="padding: 0 4px;" ng-repeat="file in globalData.conversion.files">
+                                <span class="input-group-btn"><button type="button" class="btn btn-danger" ng-click="actions.removeFile(globalData.conversion, file)" style="padding: 0 4px;"><span class="glyphicon glyphicon-remove" /></button></span>
+                                <input type="text" class="form-control" disabled value="{{file.name}}" style="padding: 0 4px; height: 22px;" />
+                            </div>
+                        </div>
+                    </div>
+                    <!--
+                    *************************************************************************
+                    **  Convert button and progress bar
+                    *************************************************************************
+                    -->
+                    <div class="form-group" style="margin-top: 8px; margin-bottom: 8px;">
+                        <button class="btn btn-primary" ng-click="actions.convertFiles();" ng-disabled="globalData.conversion.files.length == 0">Convert Files</button>
+                        <!--<label>Flip UVs on XMF <input type="checkbox" ng-model="globalData.conversion.flipUVs" style="position: relative; top: 2px " /></label>-->
+                        <div ng-show="globalData.conversion.showProgress">
+                            <div ng-if="globalData.conversion.inProgressIndex == 0">Progress: Preparing...</div>
+                            <div ng-if="globalData.conversion.inProgressIndex != 0">
+                                Progress: <span>{{globalData.conversion.inProgressIndex}} of {{globalData.conversion.files.length}}</span>
+                                <span>({{globalData.conversion.files[globalData.conversion.inProgressIndex - 1].name}})</span>
+                                <span ng-if="globalData.conversion.inProgressIndex == globalData.conversion.files.length">- Finished!</span>
+                            </div>
+                            <div class="progress">
+                                <div id="conversionProgressBar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- end panel body-->
+            </div> <!-- end panel-->
+        </div>
+        <!--
+        *************************************************************************
+        **  XMF tab
+        *************************************************************************
+        -->
+        <div class="tab-pane" id="xmf">
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <div class="form-group" style="margin-top: 8px; margin-bottom: 8px;">
+                        <label for="xmfFile">Select two or more XMF files to merge:</label>
+                        <br />
+                        <div class="input-group" style="padding: 0">
+                            <label class="input-group-btn">
+                                <span class="btn btn-primary">
+                                    Browse… <input type="file" multiple="" id="xmfFile" style="display: none;" ng-model="globalData.xmf.rawFiles" ng-change="actions.loadRawFiles(globalData.xmf)" onclick="this.value = null" accept=".xmf">
+                                </span>
+                            </label>
+                            <dropable ng-model="globalData.xmf.rawFiles" ng-change="actions.loadRawFiles(globalData.xmf)" />
+                        </div>
+                    </div>
+                    <!--
+                    *************************************************************************
+                    **  Selected files panel
+                    *************************************************************************
+                    -->
+                    <div class="panel panel-default" ng-if="globalData.xmf.files.length > 0" style="margin-top: 8px; margin-bottom: 8px;">
+                        <div class="panel-heading">
+                            <div class="pull-left"><h4>Selected file(s)</h4></div>
+                            <div class="pull-right"><button class="btn btn-link" ng-click="actions.clearFiles(globalData.xmf)">Clear List</button></div>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="panel-body">
+                            <div class="input-group" style="padding: 0 4px;" ng-repeat="file in globalData.xmf.files">
+                                <span class="input-group-btn"><button type="button" class="btn btn-danger" ng-click="actions.removeFile(globalData.xmf, file)" style="padding: 0 4px;"><span class="glyphicon glyphicon-remove" /></button></span>
+                                <input type="text" class="form-control" disabled value="{{file.name}}" style="padding: 0 4px; height: 22px;" />
+                            </div>
+                        </div>
+                    </div>
+                    <!--
+                    *************************************************************************
+                    **  Merge Files button and progress bar
+                    *************************************************************************
+                    -->
+                    <div class="form-group" style="margin-top: 8px; margin-bottom: 8px;">
+                        <button class="btn btn-primary" ng-click="actions.mergeFiles();" ng-disabled="globalData.xmf.files.length < 2">Merge Files</button>
+                        <label ng-if="globalData.xmf.files.length < 2"><em>Must select two or more XMF files</em></label>
+                        <div ng-show="globalData.xmf.showProgress">
+                            <div ng-if="globalData.xmf.inProgressIndex == 0">Progress: Preparing...</div>
+                            <div ng-if="globalData.xmf.inProgressIndex != 0">
+                                Progress: <span>{{globalData.xmf.inProgressIndex}} of {{globalData.xmf.files.length}}</span>
+                                <span>({{globalData.xmf.files[globalData.xmf.inProgressIndex - 1].name}})</span>
+                                <span ng-if="globalData.xmf.inProgressIndex == globalData.xmf.files.length">- Finished!</span>
+                            </div>
+                            <div class="progress">
+                                <div id="xmfProgressBar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- end panel body-->
+            </div> <!-- end panel-->
+        </div>
+        <!--
+        *************************************************************************
+        **  XAF tab
+        *************************************************************************
+        -->
+        <div class="tab-pane" id="xaf">
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <div class="form-group" style="margin-top: 8px; margin-bottom: 8px;">
+                        <label for="xafFile">Select one or more XAF files to process:</label>
+                        <br />
+                        <div class="input-group" style="padding: 0">
+                            <label class="input-group-btn">
+                                <span class="btn btn-primary">
+                                    Browse… <input type="file" multiple="" id="xafFile" style="display: none;" ng-model="globalData.xaf.rawFiles" ng-change="actions.loadRawFiles(globalData.xaf)" onclick="this.value = null" accept=".xaf">
+                                </span>
+                            </label>
+                            <dropable ng-model="globalData.xaf.rawFiles" ng-change="actions.loadRawFiles(globalData.xaf)" />
+                        </div>
+                    </div>
+                    <!--
+                    *************************************************************************
+                    **  Selected files panel
+                    *************************************************************************
+                    -->
+                    <div class="panel panel-default" ng-if="globalData.xaf.files.length > 0" style="margin-top: 8px; margin-bottom: 8px;">
+                        <div class="panel-heading">
+                            <div class="pull-left"><h4>Selected file(s)</h4></div>
+                            <div class="pull-right"><button class="btn btn-link" ng-click="actions.clearFiles(globalData.xaf)">Clear List</button></div>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="panel-body">
+                            <div class="input-group" style="padding: 0 4px;" ng-repeat="file in globalData.xaf.files">
+                                <span class="input-group-btn"><button type="button" class="btn btn-danger" ng-click="actions.removeFile(globalData.xaf, file)" style="padding: 0 4px;"><span class="glyphicon glyphicon-remove" /></button></span>
+                                <input type="text" class="form-control" disabled value="{{file.name}}" style="padding: 0 4px; height: 22px;" />
+                            </div>
+                        </div>
+                    </div>
+                    <!--
+                    *************************************************************************
+                    **  Merge Files button and progress bar
+                    *************************************************************************
+                    -->
+                    <div class="row" style="padding-bottom: 5px">
+                        <div class="col-xs-2" style="width: 170px;">
+                            <button class="btn btn-primary" style="width: 160px;" ng-click="actions.reverseAndAppend();" ng-disabled="globalData.xaf.files.length == 0">Reverse and Append</button>
+                        </div>
+                        <div class="col-xs-8">
+                            <span class="text-primary"><i>Duplicates animation in reverse and appends. Useful to make a non-looping animation loop seamlessly.</i></span>
+                        </div>
+                    </div>
+                    <div class="row" style="padding-bottom: 5px">
+                        <div class="col-xs-2" style="width: 170px;">
+                            <button class="btn btn-primary" style="width: 160px;" ng-click="actions.unTwitchPose();" ng-disabled="globalData.xaf.files.length == 0">UnTwitch Pose</button>
+                        </div>
+                        <div class="col-xs-8">
+                            <span class="text-primary"><i>Converts animation to a pose by copying keyframe 0 to all keyframes. Fixes "twitchy" poses.</i></span>
+                        </div>
+                    </div>
+                    <div class="row" style="padding-bottom: 5px">
+                        <div class="col-xs-5" style="width: 380px;">
+                            <button class="btn btn-primary" style="width: 160px;" ng-click="actions.offset();" ng-disabled="globalData.xaf.files.length == 0">Offset</button>
+                            &nbsp;Offset time:
+                            <input style="width: 80px;" type="text" ng-model="globalData.xaf.offsetTime" class="form-control text-right pull-right" ng-disabled="globalData.xaf.files.length == 0" />
+                        </div>
+                        <div class="col-xs-5">
+                            <span class="text-primary"><i>Offsets all animation keyframes to start at indicated time.</i></span>
+                        </div>
+                    </div>
+                    <div class="row" style="padding-bottom: 5px">
+                        <div class="col-xs-5" style="width: 380px;">
+                            <button class="btn btn-primary" style="width: 160px;" ng-click="actions.lengthen();" ng-disabled="globalData.xaf.files.length == 0">Lengthen</button>
+                            &nbsp;Lengthen time:
+                            <input style="width: 80px" type="text" ng-model="globalData.xaf.lengthenTime" class="form-control text-right pull-right" ng-disabled="globalData.xaf.files.length == 0" />
+                        </div>
+                        <div class="col-xs-5">
+                            <span class="text-primary"><i>Lengthens last frame of animation. Useful to "hold" final pose.</i></span>
+                        </div>
+                    </div>
+                    <div class="row" style="padding-bottom: 5px">
+                        <div class="col-xs-5" style="width: 380px;">
+                            <button class="btn btn-primary" style="width: 160px;" ng-click="actions.stretch();" ng-disabled="globalData.xaf.files.length == 0">Stretch</button>
+                            &nbsp;Stretch factor:
+                            <input style="width: 60px" type="text" ng-model="globalData.xaf.stretchFactor" class="form-control text-right pull-right" ng-disabled="globalData.xaf.files.length == 0" />
+                        </div>
+                        <div class="col-xs-5">
+                            <span class="text-primary"><i>Stretches animation. For example 2.0 doubles animation (slows to half speed).</i></span>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 8px; margin-bottom: 8px;" ng-show="globalData.xaf.showProgress">
+                        <div ng-if="globalData.xaf.inProgressIndex == 0">Progress: Preparing...</div>
+                        <div ng-if="globalData.xaf.inProgressIndex != 0">
+                            Progress: <span>{{globalData.xaf.inProgressIndex}} of {{globalData.xaf.files.length}}</span>
+                            <span>({{globalData.xaf.files[globalData.xaf.inProgressIndex - 1].name}})</span>
+                            <span ng-if="globalData.xaf.inProgressIndex == globalData.xaf.files.length">- Finished!</span>
+                        </div>
+                        <div class="progress">
+                            <div id="xafProgressBar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--
+        *************************************************************************
+        **  XPF tab
+        *************************************************************************
+        -->
+        <div class="tab-pane" id="xpf">
+            <div class="panel">
+                <div class="panel-body">
+                    <i>XPF Base + Play matching utility not finished yet...</i>
+                    <br />
+                    <br />
+                    <i>This combined two XPF animations, with padding, to match the duration of an XAF file. This is useful in special occasions, such as a kiss (XPF) facial animation that needs to synch with a longer running skeletal animation.</i>
+                    <br />
+                    <br />
+                    <i>If you need this functionality, please <a href="https://www.imvu.com/catalog/web_send_message_widget.php?recipient_id=10909682">message nerseus on IMVU</a> or <a href="{{mailTo}}">send Dan an email</a>.</i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <div>View source files:</div>
+        <ul>
+            <li><a href="http://nersoftware.com/IMVUConversionTool/Common.js">Common.js</a></li>
+            <li><a href="http://nersoftware.com/IMVUConversionTool/Cal3D.js">Cal3D.js</a></li>
+            <li><a href="http://nersoftware.com/IMVUConversionTool/ConversionApp.js">ConversionApp.js</a></li>
+        </ul>
+    </div>
+    <script language="javascript">
+        toastr.options = { "positionClass": "toast-top-right", "timeOut": "8000" };
+    </script>
+</body>
+</html>
